@@ -132,7 +132,7 @@ final class Worlds {
             }).onWithAck("worlds:save", args -> {
                 org.bukkit.World world = main.getServer().getWorld(UUID.fromString((String) args[0]));
                 if (world == null) return;
-                main.getServer().getScheduler().runTask(main, world::save);
+                main.getServer().getScheduler().runTask(main, () -> { world.save(); });
             });
             if (mv != null) {
                 MVWorldManager wm = ((MultiverseCore) mv).getMVWorldManager();

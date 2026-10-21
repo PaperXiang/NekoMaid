@@ -186,6 +186,11 @@ final class Terminal implements Appender {
         }
 
         @Override
+        public @NotNull net.kyori.adventure.text.Component name() {
+            return o.name();
+        }
+
+        @Override
         public @NotNull Spigot spigot() { return spigot; }
 
         @Override

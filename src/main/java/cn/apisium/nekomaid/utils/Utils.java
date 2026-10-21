@@ -234,7 +234,9 @@ public final class Utils {
             int catServer = checkCatServerUpdate();
             if (catServer != -2) return catServer;
             if (paperVersionFetcherClass != null) {
-                Class<?> clazz = Bukkit.getUnsafe().getVersionFetcher().getClass();
+                Object unsafe = Bukkit.getUnsafe();
+                Object versionFetcher = unsafe.getClass().getMethod("getVersionFetcher").invoke(unsafe);
+                Class<?> clazz = versionFetcher.getClass();
                 if (clazz == paperVersionFetcherClass) {
                     try {
                         if (isTuinity) return fetchDistanceFromGitHub("Tuinity/Tuinity", versionBranch, commitId);

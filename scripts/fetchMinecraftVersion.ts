@@ -16,7 +16,9 @@ export const get = <T> (url: string) => new Promise<T>(resolve => request.get(ur
 }))
 
 export default () => get('https://launchermeta.mojang.com/mc/game/version_manifest.json').then((body: any) => {
-  const ver = body.versions.find(it => it.id === body.latest.release)
+  const targetVersion = process.env.MINECRAFT_VERSION || '26.3'
+  const ver = body.versions.find(it => it.id === targetVersion)
+  if (!ver) exit(`Minecraft version ${targetVersion} is not present in the version manifest`)
   console.log('Found version:', ver.id)
   return get<MinecraftVersion>(ver.url)
 })

@@ -4,8 +4,10 @@ import cn.apisium.nekomaid.NekoMaid;
 import com.alibaba.fastjson2.JSONArray;
 import org.apache.logging.log4j.core.config.ConfigurationScheduler;
 import org.apache.logging.log4j.core.util.CronExpression;
+import org.bukkit.OfflinePlayer;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,15 +15,15 @@ import java.util.ArrayList;
 
 final class Scheduler {
     private ConfigurationScheduler scheduler;
-    private boolean HAS_PLACEHOLDER_API;
+    private Method placeholderExpansion;
     private ArrayList<Task> tasks;
     private final NekoMaid main;
 
     public Scheduler(NekoMaid main) {
         this.main = main;
         try {
-            Class.forName("me.clip.placeholderapi.PlaceholderAPI");
-            HAS_PLACEHOLDER_API = true;
+            Class<?> placeholderApi = Class.forName("me.clip.placeholderapi.PlaceholderAPI");
+            placeholderExpansion = placeholderApi.getMethod("setPlaceholders", OfflinePlayer.class, String.class);
         } catch (Throwable ignored) { }
         Path configFile = new File(main.getDataFolder(), "scheduler.json").toPath();
         try {
@@ -58,7 +60,12 @@ final class Scheduler {
     }
 
     private String setPlaceholders(String cmd) {
-        return HAS_PLACEHOLDER_API ? me.clip.placeholderapi.PlaceholderAPI.setPlaceholders(null, cmd) : cmd;
+        if (placeholderExpansion == null) return cmd;
+        try {
+            return (String) placeholderExpansion.invoke(null, null, cmd);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Failed to resolve PlaceholderAPI placeholders", e);
+        }
     }
 
     @SuppressWarnings("deprecation")

@@ -3,8 +3,6 @@ package cn.apisium.nekomaid.builtin;
 import cn.apisium.nekomaid.NekoMaid;
 import cn.apisium.nekomaid.utils.Utils;
 import com.rylinaux.plugman.util.PluginUtil;
-import net.frankheijden.serverutils.bukkit.ServerUtils;
-import org.apache.commons.lang.ObjectUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -73,23 +71,23 @@ final class Plugins implements Listener {
         } catch (Throwable ignored) {
             dir = main.getDataFolder().getParentFile();
         }
-        pluginsDir = ((File) ObjectUtils.defaultIfNull(dir, new File("plugins"))).toPath();
+        pluginsDir = (dir == null ? new File("plugins") : dir).toPath();
         main.onConnected(main, client -> client.on("plugins:fetch", () -> client.emit("plugins:list", getPluginsData()))
                 .onWithAck("plugins:enable", args -> (boolean) Utils.sync(() -> {
                     try {
                         String it = (String) args[0], name = it.replaceAll("\\.jar$", "");
                         Plugin pl = getPlugin(it);
                         if (pl == null) {
-                            if (HAS_SERVER_UTILS) ServerUtils.getInstance().getPlugin().getPluginManager().loadPlugin(new File(new File("plugins"), name + ".jar"));
+                            if (HAS_SERVER_UTILS) invokeServerUtils("loadPlugin", File.class, pluginsDir.resolve(name + ".jar").toFile());
                             else if (HAS_PLUGMAN) PluginUtil.load(name);
                             else return false;
                             return pm.getPlugin((String) args[1]) != null;
                         } else if (pm.isPluginEnabled(pl)) {
-                            if (HAS_SERVER_UTILS) ServerUtils.getInstance().getPlugin().getPluginManager().unloadPlugin(pl);
+                            if (HAS_SERVER_UTILS) invokeServerUtils("unloadPlugin", Plugin.class, pl);
                             else if (HAS_PLUGMAN) PluginUtil.unload(pl);
                             else pm.disablePlugin(pl);
                         } else {
-                            if (HAS_SERVER_UTILS) ServerUtils.getInstance().getPlugin().getPluginManager().enablePlugin(pl);
+                            if (HAS_SERVER_UTILS) invokeServerUtils("enablePlugin", Plugin.class, pl);
                             else if (HAS_PLUGMAN) PluginUtil.load(name);
                             else pm.enablePlugin(pl);
                         }
@@ -107,7 +105,7 @@ final class Plugins implements Listener {
                         if (it.endsWith(".jar")) {
                             Plugin pl = getPlugin(it);
                             if (pl != null) {
-                                if (HAS_SERVER_UTILS) ServerUtils.getInstance().getPlugin().getPluginManager().unloadPlugin(pl);
+                                if (HAS_SERVER_UTILS) invokeServerUtils("unloadPlugin", Plugin.class, pl);
                                 else if (HAS_PLUGMAN) PluginUtil.unload(pl);
                                 else return false;
                             }
@@ -145,6 +143,14 @@ final class Plugins implements Listener {
         File f = file.toFile();
         String name = main.getPluginLoader().getPluginDescription(f).getName();
         return pm.getPlugin(name);
+    }
+
+    private static void invokeServerUtils(String method, Class<?> parameterType, Object argument) throws Exception {
+        Class<?> serverUtils = Class.forName("net.frankheijden.serverutils.bukkit.ServerUtils");
+        Object instance = serverUtils.getMethod("getInstance").invoke(null);
+        Object plugin = instance.getClass().getMethod("getPlugin").invoke(instance);
+        Object pluginManager = plugin.getClass().getMethod("getPluginManager").invoke(plugin);
+        pluginManager.getClass().getMethod(method, parameterType).invoke(pluginManager, argument);
     }
 
     private ArrayList<PluginInfo> getPluginsData() {
