@@ -8,6 +8,15 @@ on:
 jobs:
   build-plugin:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - minecraft-version: '1.21.11'
+            java-version: '21'
+          - minecraft-version: '26.3'
+            java-version: '25'
+    name: Build plugin for Minecraft ${{ matrix.minecraft-version }}
     steps:
       - uses: actions/cache@v4
         with:
@@ -21,11 +30,11 @@ jobs:
       - name: Check out git repository
         uses: actions/checkout@v4
 
-      - name: Set up JDK 25
+      - name: Set up JDK ${{ matrix.java-version }}
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 25
+          java-version: ${{ matrix.java-version }}
 
       - name: Set plugin version
         run: version='${{ github.ref }}' && sed -i "s/0\.0\.0/${version:10}/" src/main/java/cn/apisium/nekomaid/NekoMaid.java
@@ -34,13 +43,26 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: ./gradlew build
+        run: ./gradlew -PminecraftVersion=${{ matrix.minecraft-version }} build
+
+      - name: Prepare default download
+        if: matrix.minecraft-version == '26.3'
+        run: cp build/libs/NekoMaid-26.3.jar build/libs/NekoMaid.jar
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/libs/NekoMaid-1.0-SNAPSHOT.jar
+          file: build/libs/NekoMaid-${{ matrix.minecraft-version }}.jar
+          asset_name: NekoMaid-${{ matrix.minecraft-version }}.jar
+          tag: ${{ github.ref }}
+
+      - name: Upload default download
+        if: matrix.minecraft-version == '26.3'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: build/libs/NekoMaid.jar
           asset_name: NekoMaid.jar
           tag: ${{ github.ref }}
 

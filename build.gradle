@@ -8,9 +8,20 @@ plugins {
 group 'cn.apisium.nekomaid'
 version '1.0-SNAPSHOT'
 
+def targetMinecraftVersion = providers.gradleProperty('minecraftVersion').getOrElse('26.3')
+def supportedMinecraftVersions = ['1.21.11', '26.3']
+if (!supportedMinecraftVersions.contains(targetMinecraftVersion)) {
+    throw new GradleException("Unsupported Minecraft version ${targetMinecraftVersion}; supported targets: ${supportedMinecraftVersions.join(', ')}")
+}
+def targetJavaVersion = targetMinecraftVersion.startsWith('1.21.') ? 21 : 25
+def paperApiVersion = targetMinecraftVersion == '26.3' ? '26.3.build.209-stable' : '1.21.11-R0.1-SNAPSHOT'
+
 java {
-    sourceCompatibility = JavaVersion.VERSION_25
-    targetCompatibility = JavaVersion.VERSION_25
+    sourceCompatibility = JavaVersion.toVersion(targetJavaVersion)
+    targetCompatibility = JavaVersion.toVersion(targetJavaVersion)
+}
+tasks.withType(JavaCompile).configureEach {
+    options.release = targetJavaVersion
 }
 
 repositories {
@@ -39,7 +50,7 @@ repositories {
 
 dependencies {
     //noinspection VulnerableLibrariesLocal
-    compileOnly 'io.papermc.paper:paper-api:26.3.build.209-stable'
+    compileOnly "io.papermc.paper:paper-api:${paperApiVersion}"
     compileOnly 'org.jetbrains:annotations:23.0.0'
     compileOnly 'io.netty:netty-all:4.1.85.Final'
     compileOnly 'org.apache.logging.log4j:log4j-core:2.19.0'
@@ -99,6 +110,7 @@ shadowJar {
     exclude 'io/netty/handler/codec/http/*'
 
     archiveClassifier.set('')
+    archiveFileName.set("NekoMaid-${targetMinecraftVersion}.jar")
     minimize()
 }
 build.dependsOn(shadowJar)
@@ -112,6 +124,6 @@ tasks.named('classes') {
         if (!text.contains("api-version: '1.13'")) {
             throw new GradleException('Expected generated plugin descriptor with API version 1.13')
         }
-        descriptor.setText(text.replace("api-version: '1.13'", "api-version: '26.3'"), 'UTF-8')
+        descriptor.setText(text.replace("api-version: '1.13'", "api-version: '${targetMinecraftVersion}'"), 'UTF-8')
     }
 }

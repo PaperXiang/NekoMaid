@@ -6,6 +6,15 @@ A bukkit plugin that can manage your server through web pages.
 
 - [Uniporter](https://github.com/Apisium/Uniporter)
 
+## Supported versions
+
+| Paper version | Required Java | Release artifact |
+| --- | --- | --- |
+| 1.21.11 | 21 | `NekoMaid-1.21.11.jar` |
+| 26.3 | 25 | `NekoMaid-26.3.jar` |
+
+Each release also provides `NekoMaid.jar` for Paper 26.3. Use the matching version-specific artifact for Paper 1.21.11.
+
 ## Usage
 
 1. Download the [NekoMaid.jar](https://github.com/neko-craft/NekoMaid/releases/latest/download/NekoMaid.jar)
